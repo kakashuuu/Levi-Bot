@@ -1,0 +1,92 @@
+import { BaseCommand, Command, Message } from '../../Structures'
+import { IArgs } from '../../Types/Message'
+
+@Command('auction', {
+    category: 'cards',
+    description: 'Auction of cards',
+    usage: 'auction [index of the card from you deck] [lowest bit]',
+    cooldown: 15,
+    exp: 35,
+    antiTrade: true
+})
+export default class command extends BaseCommand {
+    override execute = async (M: Message, { args }: IArgs): Promise<void> => {
+        if (this.handler.auction.get(M.from)) return void M.reply('Auction is Ongoing, Baka!')
+        const position = parseInt(args[0], 10) - 1
+        const price = parseInt(args[1])
+        const { deck } = await this.client.DB.getUser(M.sender.jid)
+        if (deck.length < 1) return void M.reply("You don't have any cards in your deck")
+        if (isNaN(price)) return void (await M.reply('Invalid price'))
+        if (price > 90000000000000)
+            return void (await M.reply('You can not set the minimum value to 90000000000000 Golds'))
+        if (isNaN(position)) return void (await M.reply('Invalid card index'))
+        if (position < 0 || position >= deck.length) return void (await M.reply('Invalid card index'))
+        const card = deck[position]
+        if (!card) return void (await M.reply('Invalid card index'))
+        this.handler.auction.set(M.from, { seller: M.sender.jid, card, price, position })
+        let image = card.image
+        if (image.endsWith('.webm')) image = image.replace('.webm', '.gif')
+        let buffer = await this.client.utils.getBuffer(image)
+        if (card.tier === '6' || card.tier === 'S') buffer = await this.client.utils.gifToMp4(buffer)
+        await M.reply(
+            buffer,
+            card.tier === '6' || card.tier === 'S' ? 'video' : 'image',
+            card.tier === '6' || card.tier === 'S',
+            undefined,
+            [
+                '🟨 *AUCTION ONLINE* 🟨',
+                '',
+                '🃏 *Card Details* 🃏',
+                '',
+                `💠 *Title:* ${card.name}`,
+                `👑 *Tier:* ${card.tier}`,
+                `📝 *Description:* ${card.description}`,
+                '',
+                `⛩️ *Auction has started for this card by @${
+                    M.sender.jid.split('@')[0]
+                } the lowest bit is ${price} Golds* ⛩️`,
+                '_It will last for 5 minute only_',
+                '',
+                `*[Use ${this.client.config.prefix}bid <ammount> to bid on this card]*`
+            ].join('\n'),
+            [M.sender.jid],
+            undefined,
+            await this.client.utils.getBuffer('https://cdn.shoob.gg/images/content/card_back.png')
+        )
+
+        setTimeout(async () => {
+            const data = this.handler.auction.get(M.from)
+            const winner = this.handler.highestBit.get(M.from)
+            this.handler.auction.delete(M.from)
+            this.handler.highestBit.delete(M.from)
+            if (!winner) return void (await M.reply('🟩 *Auction has been ended!! no winner!!*'))
+            const { deck: targetdeck = [] } = await this.client.DB.getUser(data?.seller!)
+            const { cardCollection: collec, deck } = await this.client.DB.getUser(winner?.buyer!)
+            let text = 'It is now in your deck'
+            if (deck.length < 12) deck.push(data?.card!)
+            else {
+                collec.push(data?.card!)
+                text = `It has been stored in your collection`
+            }
+            await this.client.DB.user.updateOne(
+                { jid: winner?.buyer! },
+                { $set: { cardCollection: collec, deck: deck } }
+            )
+            await this.client.DB.setMoney(winner?.buyer!, -winner?.bit!)
+            targetdeck.splice(data?.position!, 1)
+            await this.client.DB.user.updateOne({ jid: data?.seller! }, { $set: { deck: targetdeck } })
+            await this.client.DB.setMoney(data?.seller!, winner?.bit!)
+            await M.reply(
+                '🟩 *Auction has been ended!!*\n\n' +
+                    `@${winner?.buyer!.split('@')[0]} got ${data?.card!.name} - ${
+                        data?.card!.tier
+                    } for ${winner?.bit!} cradits* \n_${text}_`,
+                'text',
+                undefined,
+                undefined,
+                undefined,
+                [winner?.buyer!]
+            )
+        }, 300000)
+    }
+}
