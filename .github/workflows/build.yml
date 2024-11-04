@@ -2,9 +2,9 @@ name: Build 🚀
 
 on:
   push:
-    branches: [ Levi ]
+    branches: [ master ]
   pull_request:
-    branches: [ Levi ]
+    branches: [ master ]
 
 jobs:
   build:
