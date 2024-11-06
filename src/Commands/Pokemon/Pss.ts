@@ -1,4 +1,4 @@
-import { summaryScreen, partyScreen } from '@shineiichijo/team-preview'
+import { summaryScreen, partyScreen } from '@pkmn/img'
 import { Command, BaseCommand, Message } from '../../Structures'
 import { IArgs, IPokemonAPIResponse } from '../../Types'
 
