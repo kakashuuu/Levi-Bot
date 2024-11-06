@@ -1,5 +1,5 @@
 import { createCanvas, Image, loadImage } from 'canvas'
-import { writeFile, readFile } from 'fs/promises'
+import { writeFile, readFile } from 'fs-extra'
 import { tmpdir } from 'os'
 import { Utils } from './Utils'
 
