@@ -14,9 +14,9 @@ export class Server {
         this.app.get('/wa/qr', async (req: Request, res: Response) => {
             const { session } = req.query
             if (!session || !this.client || this.client.config.session !== (req.query.session as string))
-                return void res.status(404).setHeader('Content-Type', 'text/plain').send('Invalid Session').end()
+                return res.status(404).setHeader('Content-Type', 'text/plain').send('Invalid Session').end()
             if (!this.client || !this.client.QR)
-                return void res
+                return res
                     .status(404)
                     .setHeader('Content-Type', 'text/plain')
                     .send(
