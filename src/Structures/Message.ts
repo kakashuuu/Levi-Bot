@@ -95,11 +95,6 @@ export class Message {
                         username,
                         isMod,
                         isAdmin: false
-                    } || {
-                        username: 'User',
-                        jid: this.client.correctJid(participant),
-                        isMod: this.client.config.mods.includes(this.client.correctJid(participant)),
-                        isAdmin: false
                     },
                     content: getQuotedContent(),
                     message: quotedMessage,
